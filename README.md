@@ -1,2 +1,3 @@
-# life-journel
 # life-journey
+
+
