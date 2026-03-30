@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>个人成长事迹记录与追踪</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<!-- Login Page -->
+<div id="loginPage" class="login-page">
+  <div class="login-card">
+    <h2>个人成长记录</h2>
+    <div id="loginTabs" class="login-tabs">
+      <button class="tab-btn active" data-tab="login">登录</button>
+      <button class="tab-btn" data-tab="register">注册</button>
+    </div>
+    <form id="loginForm" class="login-form">
+      <input type="text" name="username" placeholder="用户名" required>
+      <input type="password" name="password" placeholder="密码" required>
+      <button type="submit" class="primary">登录</button>
+    </form>
+    <form id="registerForm" class="login-form hidden">
+      <input type="text" name="username" placeholder="用户名" required>
+      <input type="password" name="password" placeholder="密码" required>
+      <input type="password" name="confirmPassword" placeholder="确认密码" required>
+      <button type="submit" class="primary">注册</button>
+    </form>
+    <div id="loginError" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app" class="hidden">
+<header class="site-header">
+<h1>个人成长事迹记录与追踪</h1>
+<nav class="site-nav">
+<a href="#profile">个人信息</a>
+<a href="#relationships">社会关系图</a>
+<a href="#records">分类记录</a>
+<a href="#timeline">阶段与时间轴</a>
+<a href="#logs">操作日志</a>
+<button id="logoutBtn" class="logout-btn">退出</button>
+</nav>
+</header>
+<main class="container">
+<section id="profile" class="card">
+<h2>个人信息</h2>
+<div class="profile-grid">
+<div class="profile-photo"><img id="profilePhoto" alt=""></div>
+<div class="profile-fields">
+<div class="field"><span>姓名</span><strong id="profileName"></strong></div>
+<div class="field"><span>身高</span><strong id="profileHeight"></strong></div>
+<div class="field"><span>体重</span><strong id="profileWeight"></strong></div>
+<div class="field"><span>星座</span><strong id="profileZodiac"></strong></div>
+<div class="field"><span>MBTI</span><strong id="profileMbti"></strong></div>
+</div>
+</div>
+<details>
+<summary>编辑资料</summary>
+<form id="profileForm" class="form-grid">
+<input type="text" name="name" placeholder="姓名">
+<input type="number" name="height" placeholder="身高(cm)">
+<input type="number" name="weight" placeholder="体重(kg)">
+<input type="text" name="zodiac" placeholder="星座">
+<input type="text" name="mbti" placeholder="MBTI">
+<input type="url" name="photo" placeholder="照片URL">
+<button type="submit" class="primary">保存</button>
+</form>
+</details>
+</section>
+<section id="relationships" class="card">
+<h2>社会关系图</h2>
+<div class="grid-two">
+<div>
+<div id="graph"></div>
+</div>
+<div>
+<h3>人物</h3>
+<ul id="peopleList" class="list"></ul>
+<form id="personForm" class="form-inline">
+<input type="text" name="name" placeholder="姓名" required>
+<select name="ptype">
+<option value="朋友">朋友</option>
+<option value="亲人">亲人</option>
+<option value="情侣">情侣</option>
+<option value="同事">同事</option>
+<option value="导师">导师</option>
+</select>
+<button type="submit" class="primary">添加人物</button>
+</form>
+<h3>关系</h3>
+<ul id="relationList" class="list"></ul>
+<form id="relationForm" class="form-inline">
+<select name="source" id="relationSource"></select>
+<select name="target" id="relationTarget"></select>
+<select name="rtype">
+<option value="朋友">朋友</option>
+<option value="亲人">亲人</option>
+<option value="情侣">情侣</option>
+<option value="同事">同事</option>
+<option value="师生">师生</option>
+</select>
+<button type="submit" class="primary">添加关系</button>
+</form>
+</div>
+</div>
+</section>
+<section id="records" class="card">
+<h2>分类记录</h2>
+<div class="filters">
+<select id="categoryFilter">
+<option value="">全部类目</option>
+<option>健身</option>
+<option>阅读</option>
+<option>旅行</option>
+<option>音乐</option>
+<option>社交</option>
+<option>技术文档</option>
+<option>日常</option>
+<option>美食</option>
+<option>技能</option>
+</select>
+<input id="tagFilter" type="text" placeholder="标签筛选，如 美食">
+</div>
+<div id="recordGrid" class="grid-cards"></div>
+<details>
+<summary>新增或编辑记录</summary>
+<form id="recordForm" class="form-grid">
+<select name="category" required>
+<option>健身</option>
+<option>阅读</option>
+<option>旅行</option>
+<option>音乐</option>
+<option>社交</option>
+<option>技术文档</option>
+<option>日常</option>
+<option>美食</option>
+<option>技能</option>
+</select>
+<input type="text" name="title" placeholder="标题" required>
+<input type="date" name="date" required>
+<input type="text" name="tags" placeholder="标签，逗号分隔">
+<input type="url" name="image" placeholder="图片URL">
+<input type="url" name="video" placeholder="视频URL">
+<textarea name="content" placeholder="内容" rows="4"></textarea>
+<input type="text" name="locations" placeholder="旅行地点 lat,lng;多点用 | 分隔">
+<button type="submit" class="primary">保存记录</button>
+</form>
+</details>
+</section>
+<section id="travel" class="card">
+<h2>旅行展示</h2>
+<div id="travelMap" class="map"></div>
+<div id="travelItinerary" class="itinerary"></div>
+</section>
+<section id="timeline" class="card">
+<h2>阶段与时间轴</h2>
+<div id="timelineView" class="timeline"></div>
+</section>
+<section id="logs" class="card">
+<h2>操作日志</h2>
+<div class="log-actions">
+<button id="undoBtn" class="secondary">撤销最后一次操作</button>
+</div>
+<ul id="logList" class="list"></ul>
+</section>
+</main>
+<footer class="site-footer">
+<div>© 2026 成长记录</div>
+</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="./script.js" defer></script>
+</body>
+</html>
