@@ -35,7 +35,7 @@ function seed() {
       {
         id: "rec2",
         category: "健身",
-        title: "力量训练第12周",
+        title: "力量训练第 12 周",
         date: "2026-02-20",
         tags: ["健身", "力量"],
         content: "深蹲 5x5，硬拉 3x5，卧推 5x5。",
@@ -94,6 +94,7 @@ function pushLog(entry) {
   saveStore()
   renderLogs()
 }
+
 function renderProfile() {
   const p = store.profile
   document.getElementById("profilePhoto").src = p.photo || ""
@@ -272,18 +273,75 @@ function renderRecords() {
     grid.appendChild(card)
   })
 }
+let travelMap = null
+let currentTravel = null
 function renderTravel() {
-  const travel = store.records.find(r => r.category === "旅行")
+  const travels = store.records.filter(r => r.category === "旅行")
+  const listEl = document.getElementById("travelList")
+  const detailEl = document.getElementById("travelDetail")
+  listEl.innerHTML = ""
+  if (travels.length === 0) {
+    listEl.innerHTML = '<div class="meta" style="color:var(--muted)">暂无旅行记录</div>'
+    detailEl.classList.add("hidden")
+    return
+  }
+  travels.forEach(t => {
+    const card = document.createElement("div")
+    card.className = "travel-card"
+    const img = document.createElement("img")
+    img.src = t.image || "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400&q=60"
+    img.alt = t.title
+    const body = document.createElement("div")
+    body.className = "travel-card-body"
+    const title = document.createElement("h4")
+    title.textContent = t.title
+    const date = document.createElement("div")
+    date.className = "date"
+    date.textContent = t.date
+    const locs = document.createElement("div")
+    locs.className = "locations"
+    locs.textContent = (t.locations || []).map(l => l.label).join(" → ") || "点击查看详情"
+    body.appendChild(title)
+    body.appendChild(date)
+    body.appendChild(locs)
+    card.appendChild(img)
+    card.appendChild(body)
+    card.onclick = () => showTravelDetail(t)
+    listEl.appendChild(card)
+  })
+  listEl.classList.remove("hidden")
+  detailEl.classList.add("hidden")
+}
+function showTravelDetail(travel) {
+  currentTravel = travel
+  const listEl = document.getElementById("travelList")
+  const detailEl = document.getElementById("travelDetail")
   const mapEl = document.getElementById("travelMap")
+  const titleEl = document.getElementById("travelTitle")
+  const itinEl = document.getElementById("travelItinerary")
+  const notesView = document.getElementById("travelNotesView")
+  const notesEditor = document.getElementById("travelNotesEditor")
+  listEl.classList.add("hidden")
+  detailEl.classList.remove("hidden")
+  titleEl.textContent = travel.title
   mapEl.innerHTML = ""
-  if (!travel) return
-  const map = L.map("travelMap")
-  const center = travel.locations && travel.locations.length ? [travel.locations[0].lat, travel.locations[0].lng] : [30.243,120.150]
-  map.setView(center, 13)
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "" }).addTo(map)
-  ;(travel.locations || []).forEach(l => L.marker([l.lat,l.lng]).addTo(map).bindPopup(l.label || "地点"))
-  const itin = document.getElementById("travelItinerary")
-  itin.innerHTML = ""
+  if (travelMap) {
+    travelMap.remove()
+    travelMap = null
+  }
+  const center = travel.locations && travel.locations.length ? [travel.locations[0].lat, travel.locations[0].lng] : [30.243, 120.150]
+  travelMap = L.map("travelMap").setView(center, 13)
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "" }).addTo(travelMap)
+  const locations = travel.locations || []
+  locations.forEach((l, i) => {
+    L.marker([l.lat, l.lng]).addTo(travelMap).bindPopup((i + 1) + ". " + (l.label || "地点"))
+  })
+  if (locations.length > 1) {
+    const latlngs = locations.map(l => [l.lat, l.lng])
+    L.polyline(latlngs, { color: '#2dd4bf', weight: 3, opacity: 0.8 }).addTo(travelMap)
+    travelMap.fitBounds(L.latLngBounds(latlngs), { padding: [20, 20] })
+  }
+  itinEl.innerHTML = ""
   ;(travel.itinerary || []).forEach(i => {
     const div = document.createElement("div")
     div.className = "item"
@@ -293,31 +351,91 @@ function renderTravel() {
     a.textContent = i.activity
     div.appendChild(t)
     div.appendChild(a)
-    itin.appendChild(div)
+    itinEl.appendChild(div)
   })
+  // Render notes
+  const notes = travel.notes || ""
+  notesView.innerHTML = notes ? marked.parse(notes) : '<span style="color:var(--muted)">暂无内容，点击编辑添加旅行感悟...</span>'
+  notesEditor.value = notes
+  // Reset editor state
+  notesView.classList.remove("hidden")
+  notesEditor.classList.add("hidden")
+  document.getElementById("editNotesBtn").classList.remove("hidden")
+  document.getElementById("saveNotesBtn").classList.add("hidden")
+  document.getElementById("cancelNotesBtn").classList.add("hidden")
+}
+function hideTravelDetail() {
+  const listEl = document.getElementById("travelList")
+  const detailEl = document.getElementById("travelDetail")
+  listEl.classList.remove("hidden")
+  detailEl.classList.add("hidden")
+  currentTravel = null
+}
+function editTravelNotes() {
+  document.getElementById("travelNotesView").classList.add("hidden")
+  document.getElementById("travelNotesEditor").classList.remove("hidden")
+  document.getElementById("editNotesBtn").classList.add("hidden")
+  document.getElementById("saveNotesBtn").classList.remove("hidden")
+  document.getElementById("cancelNotesBtn").classList.remove("hidden")
+}
+function saveTravelNotes() {
+  if (!currentTravel) return
+  const notes = document.getElementById("travelNotesEditor").value
+  currentTravel.notes = notes
+  saveStore()
+  document.getElementById("travelNotesView").innerHTML = notes ? marked.parse(notes) : '<span style="color:var(--muted)">暂无内容，点击编辑添加旅行感悟...</span>'
+  document.getElementById("travelNotesView").classList.remove("hidden")
+  document.getElementById("travelNotesEditor").classList.add("hidden")
+  document.getElementById("editNotesBtn").classList.remove("hidden")
+  document.getElementById("saveNotesBtn").classList.add("hidden")
+  document.getElementById("cancelNotesBtn").classList.add("hidden")
+}
+function cancelTravelNotes() {
+  document.getElementById("travelNotesEditor").value = currentTravel ? (currentTravel.notes || "") : ""
+  document.getElementById("travelNotesView").classList.remove("hidden")
+  document.getElementById("travelNotesEditor").classList.add("hidden")
+  document.getElementById("editNotesBtn").classList.remove("hidden")
+  document.getElementById("saveNotesBtn").classList.add("hidden")
+  document.getElementById("cancelNotesBtn").classList.add("hidden")
 }
 function renderTimeline() {
   const view = document.getElementById("timelineView")
   view.innerHTML = ""
-  const buckets = {}
-  store.records.forEach(r => {
-    const y = new Date(r.date).getFullYear()
-    const key = y + ""
-    buckets[key] = buckets[key] || []
-    buckets[key].push(r)
+  const line = document.createElement("div")
+  line.className = "timeline-line"
+  view.appendChild(line)
+  const container = document.createElement("div")
+  container.className = "timeline-items"
+  const sorted = store.records.slice().sort((a, b) => new Date(a.date) - new Date(b.date))
+  const items = sorted.slice(-6)
+  const count = items.length
+  items.forEach((r, i) => {
+    const item = document.createElement("div")
+    item.className = "timeline-item " + (i % 2 === 0 ? "above" : "below")
+    item.dataset.category = r.category
+    const pct = count === 1 ? 50 : (i / (count - 1)) * 80 + 10
+    item.style.left = `calc(${pct}% - 60px)`
+    const connector = document.createElement("div")
+    connector.className = "connector"
+    const dot = document.createElement("div")
+    dot.className = "dot"
+    const date = document.createElement("div")
+    date.className = "date"
+    date.textContent = r.date
+    const category = document.createElement("div")
+    category.className = "category"
+    category.textContent = r.category
+    const title = document.createElement("div")
+    title.className = "title"
+    title.textContent = r.title
+    item.appendChild(connector)
+    item.appendChild(dot)
+    item.appendChild(date)
+    item.appendChild(category)
+    item.appendChild(title)
+    container.appendChild(item)
   })
-  Object.keys(buckets).sort((a,b)=>b-a).forEach(k => {
-    const box = document.createElement("div")
-    box.className = "stage"
-    const h = document.createElement("div")
-    h.innerHTML = "<strong>" + k + "</strong>"
-    const list = document.createElement("div")
-    list.className = "meta"
-    list.textContent = buckets[k].map(r => r.category + "：" + r.title).join("；")
-    box.appendChild(h)
-    box.appendChild(list)
-    view.appendChild(box)
-  })
+  view.appendChild(container)
 }
 function renderLogs() {
   const ul = document.getElementById("logList")
@@ -334,6 +452,10 @@ function renderLogs() {
 }
 function genId(prefix) { return prefix + Math.random().toString(36).slice(2,8) }
 function setupEvents() {
+  document.getElementById("travelBack").addEventListener("click", hideTravelDetail)
+  document.getElementById("editNotesBtn").addEventListener("click", editTravelNotes)
+  document.getElementById("saveNotesBtn").addEventListener("click", saveTravelNotes)
+  document.getElementById("cancelNotesBtn").addEventListener("click", cancelTravelNotes)
   document.getElementById("profileForm").addEventListener("submit", e => {
     e.preventDefault()
     const f = e.target

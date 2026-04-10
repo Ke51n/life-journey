@@ -34,13 +34,7 @@ func main() {
 		c.Next()
 	})
 
-	// Static files
-	r.Static("/static", "./frontend")
-	r.GET("/", func(c *gin.Context) {
-		c.File("./frontend/index.html")
-	})
-
-	// API routes
+	// API routes (must be registered before static files)
 	api := r.Group("/api")
 	{
 		// Auth routes (no auth required)
@@ -81,6 +75,15 @@ func main() {
 			protected.POST("/logs/undo", handlers.UndoLastAction)
 		}
 	}
+
+	// Static files - serves frontend assets
+	r.Static("/static", "./frontend")
+	r.GET("/favicon.ico", func(c *gin.Context) {
+		c.Status(204)
+	})
+	r.GET("/", func(c *gin.Context) {
+		c.File("./frontend/index.html")
+	})
 
 	// Start server
 	log.Println("Server starting on :" + cfg.Port)
